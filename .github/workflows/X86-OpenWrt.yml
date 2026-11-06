@@ -9,7 +9,7 @@ on:
         description: "OpenWrt version or series (e.g. 25.12, 24.10, or latest)"
         required: false
         type: string
-        default: "latest"
+        default: "25.12.6"
 
 jobs:
   build:
