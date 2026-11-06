@@ -1,0 +1,131 @@
+# ============================================================
+# 斐讯 N1（Amlogic S905D, arm64, 2G RAM / 8G eMMC）
+#
+# 流程：YAOF 的 packages.common + packages.n1 → ImageBuilder 出 armsr/armv8
+#       rootfs.tar.gz → flippy 打包脚本（mk_s905d_n1.sh）套 ophub 内核
+#       + dtb + uboot → 可 dd 到 U 盘的 N1 镜像
+# ============================================================
+name: N1-Amlogic
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "OpenWrt 版本（留空/latest = 最新 25.12.x）"
+        required: false
+        type: string
+        default: "25.12.6"
+      kernel:
+        description: "flippy 内核系列（6.12.y 最稳，6.18.y 新）"
+        required: false
+        type: choice
+        options: ["6.12.y", "6.18.y", "6.6.y", "6.1.y"]
+      openwrt_ip:
+        description: "N1 默认 LAN IP"
+        required: false
+        type: string
+        default: "192.168.1.1"
+      publish:
+        description: "是否发 Release（tag: n1-<version>）"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: n1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rootfs:
+    name: Assemble armsr/armv8 rootfs
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Host Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            build-essential zstd curl wget jq file rsync \
+            libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc
+
+      - name: Build rootfs (YAOF 包集, packages.n1)
+        run: |
+          chmod +x ./scripts/build.sh
+          ./scripts/build.sh armsr armv8 generic packages.n1 "${{ inputs.version }}"
+
+      - name: List output
+        run: ls -lh artifact/
+
+      - name: Upload rootfs artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: armsr-rootfs
+          path: artifact/*rootfs.tar.gz
+          if-no-files-found: error
+
+  pack:
+    name: Package N1 image (flippy / s905d)
+    needs: rootfs
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download rootfs
+        uses: actions/download-artifact@v6
+        with:
+          name: armsr-rootfs
+          path: rootfs
+
+      - name: Show rootfs
+        run: ls -lh rootfs/
+
+      - name: Package OpenWrt Firmware
+        uses: ophub/flippy-openwrt-actions@main
+        env:
+          OPENWRT_ARMSR: rootfs/*rootfs.tar.gz
+          PACKAGE_SOC: s905d
+          KERNEL_REPO_URL: ophub/kernel
+          KERNEL_VERSION_NAME: ${{ inputs.kernel || '6.12.y' }}
+          KERNEL_AUTO_LATEST: "true"
+          OPENWRT_IP: ${{ inputs.openwrt_ip || '192.168.1.1' }}
+          GZIP_IMGS: .gz
+          SAVE_OPENWRT_ROOTFS: "false"
+          WHOAMI: YAOF
+
+      - name: Upload image artifact
+        if: env.PACKAGED_STATUS == 'success'
+        uses: actions/upload-artifact@v6
+        with:
+          name: YAOF-N1-s905d
+          path: ${{ env.PACKAGED_OUTPUTPATH }}/*
+          if-no-files-found: error
+
+      - name: Publish to Releases
+        if: env.PACKAGED_STATUS == 'success' && inputs.publish
+        uses: ncipollo/release-action@v1
+        with:
+          name: YAOF-N1-${{ inputs.version }}
+          tag: n1-${{ inputs.version }}
+          commit: ${{ github.sha }}
+          allowUpdates: true
+          replacesArtifacts: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*
+          body: |
+            ### 斐讯 N1 / Amlogic S905D
+            - 默认 IP: ${{ inputs.openwrt_ip }}
+            - 默认用户: root（首登自行设密码，镜像内为空密码）
+            - 内核: flippy ${{ inputs.kernel }}（ophub/kernel, auto latest）
+            - OpenWrt: armsr/armv8 ${{ inputs.version }} + YAOF 包集
+
+            ### 刷机
+            1. `gunzip` 后 `dd` 到 U 盘（或 balenaEtcher 直刷 .img.gz）
+            2. N1 插 U 盘上电，从 U 盘启动
+            3. LuCI → 系统 → Amlogic 服务 → 安装 OpenWrt 到 eMMC
+            4. 拔 U 盘重启，eMMC 启动
