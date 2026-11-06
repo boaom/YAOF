@@ -70,4 +70,11 @@ fi
 
 uci -q commit uhttpd 2>/dev/null || true
 
+# 低内存设备（N1 = 2G）把 conntrack 表降下来，262144 条在 2G 上偏重
+MEM_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
+if [ "${MEM_KB}" -gt 0 ] && [ "${MEM_KB}" -lt 1600000 ]; then
+	sed -i 's/^net.netfilter.nf_conntrack_max = .*/net.netfilter.nf_conntrack_max = 65536/' /etc/sysctl.d/99-yaof-tune.conf 2>/dev/null || true
+	logger -t yaof-firstboot "low memory (${MEM_KB}KB), conntrack_max=65536"
+fi
+
 exit 0
