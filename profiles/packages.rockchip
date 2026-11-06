@@ -1,3 +1,11 @@
-# Platform
+# ============================================================
+# NanoPi (Rockchip) 平台专属
+# ============================================================
 autocore-arm
 kmod-hwmon-pwmfan
+kmod-thermal
+kmod-hwmon-core
+
+# R4S / R2S 常见扩展
+kmod-usb-storage
+kmod-fs-ext4

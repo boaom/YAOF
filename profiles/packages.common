@@ -1,10 +1,16 @@
-# UI
+# ============================================================
+# YAOF 全平台插件清单（ImageBuilder PACKAGES）
+# 语法：一行一个；空格分隔；"-pkg" 表示排除；"#  " 开头是注释
+# 缺包不会构建失败，build.sh 会自动剔除并告警
+# ============================================================
+
+# ---------- UI ----------
 luci
 luci-theme-vantage
 luci-app-vantage
 addition-trans-zh
 
-# Translations
+# ---------- 中文翻译 ----------
 luci-i18n-base-zh-cn
 luci-i18n-firewall-zh-cn
 luci-i18n-package-manager-zh-cn
@@ -12,8 +18,6 @@ luci-i18n-vantage-zh-cn
 luci-i18n-vantage-theme-zh-cn
 luci-i18n-homeproxy-zh-cn
 luci-i18n-nikki-zh-cn
-luci-i18n-honk-zh-cn
-luci-i18n-dae-zh-cn
 luci-i18n-flowcone-zh-cn
 luci-i18n-sqm-zh-cn
 luci-i18n-natmapt-zh-cn
@@ -27,23 +31,34 @@ luci-i18n-3cat-zh-cn
 luci-i18n-airconnect-zh-cn
 luci-i18n-filemanager-zh-cn
 luci-i18n-partexp-zh-cn
+luci-i18n-ttyd-zh-cn
+luci-i18n-wrtbwmon-zh-cn
+luci-i18n-ramfree-zh-cn
+luci-i18n-taskplan-zh-cn
+luci-i18n-wechatpush-zh-cn
 
-# Proxy & eBPF
+# ---------- 代理内核（保留 homeproxy + nikki 双轨）----------
 luci-app-homeproxy
 luci-app-nikki
-luci-app-honk
-luci-app-dae
 vmlinux-btf
 luci-app-flowcone
 
-# Network & Routing
+# 已移除（按需恢复，二选一即可，同时开会抢 eBPF hook / 吃内存）：
+# luci-app-dae
+# dae
+# luci-app-honk
+# honk
+
+# ---------- 网络与路由 ----------
 luci-app-sqm
 luci-app-natmapt
 luci-app-bandix
 luci-app-arpbind
 luci-app-ap-modem
+luci-app-wrtbwmon
+luci-app-ramfree
 
-# VPN & Services
+# ---------- VPN 与服务 ----------
 luci-proto-wireguard
 qrencode
 luci-app-zerotier
@@ -52,22 +67,48 @@ ddns-scripts-cloudflare
 luci-app-upnp
 luci-app-3cat
 luci-app-airconnect
+luci-app-taskplan
+luci-app-wechatpush
 
-# System & Filesystem
+# ---------- 系统与文件 ----------
 ethtool
 kmod-fs-f2fs
 kmod-tcp-bbr
 zram-swap
 luci-app-filemanager
 luci-app-partexp
+luci-app-ttyd
+block-mount
+kmod-usb-storage
+kmod-fs-ext4
+kmod-fs-exfat
+kmod-fs-vfat
+kmod-usb3
+irqbalance
 
-# USB Tethering
+# ---------- 运维常用（进镜像，省得事后 opkg/apk 装）----------
+bash
+curl
+ca-bundle
+htop
+nano
+tcpdump
+mtr
+socat
+iperf3
+openssh-sftp-server
+jq
+coreutils-stat
+lm-sensors
+
+# ---------- USB 网络共享 ----------
 kmod-usb-net-rndis
 kmod-usb-net-ipheth
 usbmuxd
 kmod-usb-net-cdc-ether
+kmod-usb-net-rtl8152
 
-# Base Packages
+# ---------- 基座替换 ----------
 -dnsmasq
 dnsmasq-full
 -luci-app-attendedsysupgrade

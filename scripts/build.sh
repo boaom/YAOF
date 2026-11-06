@@ -145,7 +145,7 @@ build_firmware() {
         PROFILE="$PROFILE" \
         PACKAGES="$packages" \
         FILES="$OVERLAY_DIR" \
-        ROOTFS_PARTSIZE="1024" 2>&1 | tee "$BUILD_LOG"
+        ROOTFS_PARTSIZE="$(cat "${ROOT_DIR}/profiles/rootfs_size" 2>/dev/null || echo 1024)" 2>&1 | tee "$BUILD_LOG"
 }
 
 missing_packages_from_log() {

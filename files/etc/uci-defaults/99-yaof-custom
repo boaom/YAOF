@@ -1,0 +1,67 @@
+#!/bin/sh
+# YAOF 首启定制（uci-defaults：仅首次启动/恢复出厂时执行一次，跑完自删）
+# 改动点：主机名 / 时区 / LAN 地址 / root 密码 / 日志级别 / 关闭无用的 IPv6 RA 通知噪声
+set -eu
+
+HOSTNAME="YAOF"
+LAN_IP="192.168.1.1"
+LAN_MASK="255.255.255.0"
+TZ_NAME="Asia/Shanghai"
+TZ_SPEC="CST-8"
+LOG_SIZE="128"
+# openssl passwd -1 -salt yaof '你的密码'  ← 生成后替换下面整串
+ROOT_PASS_HASH="REPLACE_ME"
+
+logger -t yaof-firstboot "applying custom defaults"
+
+uci -q batch <<-EOT
+	set system.@system[0].hostname="${HOSTNAME}"
+	set system.@system[0].timezone="${TZ_SPEC}"
+	set system.@system[0].zonename="${TZ_NAME}"
+	set system.@system[0].log_size="${LOG_SIZE}"
+	commit system
+EOT
+
+if [ -n "${LAN_IP}" ]; then
+	uci -q batch <<-EOT
+		set network.lan.ipaddr="${LAN_IP}"
+		set network.lan.netmask="${LAN_MASK}"
+		commit network
+	EOT
+fi
+
+# root 密码：md5crypt 写入 /etc/shadow
+if [ "${ROOT_PASS_HASH}" != "REPLACE_ME" ] && [ -n "${ROOT_PASS_HASH}" ]; then
+	if grep -q '^root:' /etc/shadow 2>/dev/null; then
+		sed -i "s|^root:[^:]*:|root:${ROOT_PASS_HASH}:|" /etc/shadow
+	else
+		echo "root:${ROOT_PASS_HASH}:0:0:99999:7:::" >> /etc/shadow
+	fi
+	logger -t yaof-firstboot "root password set"
+else
+	logger -t yaof-firstboot "WARN root password hash未替换，保持空密码（首登请自行设置）"
+fi
+
+# 单网口机器（N100 软路由常见）：所有物理口都进 br-lan，避免 wan 口空挂
+# 需要「LAN/WAN 分离」就把下面整段注释掉
+if [ -f /etc/config/network ] && uci -q get network.@device[0] >/dev/null 2>&1; then
+	PORTS=""
+	for n in /sys/class/net/*; do
+		dev=$(basename "$n")
+		case "$dev" in
+			lo|br-lan|eth0.*|wlan*|sit*|ip6tnl*|docker*) continue ;;
+		esac
+		[ -d "$n/device" ] || continue
+		[ "$(cat "$n/type" 2>/dev/null)" = "1" ] || continue
+		PORTS="${PORTS} ${dev}"
+	done
+	if [ -n "${PORTS}" ]; then
+		uci -q set network.@device[0].ports="${PORTS# }"
+		uci -q commit network
+		logger -t yaof-firstboot "br-lan ports:${PORTS}"
+	fi
+fi
+
+uci -q commit uhttpd 2>/dev/null || true
+
+exit 0

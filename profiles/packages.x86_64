@@ -1,28 +1,41 @@
-# Platform
+# ============================================================
+# X86-64 平台专属（软路由 / N100 / 虚拟机通用）
+# ============================================================
+
+# ---------- 平台 ----------
 autocore-x86
 
-# Intel NIC
-kmod-igc
+# ---------- Intel 网卡 ----------
+kmod-igc          # i225/i226 2.5G
 kmod-igb
 kmod-e1000e
+kmod-e1000
 kmod-i40e
 kmod-iavf
 kmod-ixgbe
 kmod-ixgbevf
 
-# Realtek NIC
+# ---------- Realtek 网卡 ----------
 kmod-r8169
 kmod-r8125
 kmod-usb-net-rtl8152
 r8152-firmware
 
-# Mellanox NIC
+# ---------- Mellanox ----------
 kmod-mlx4-core
 kmod-mlx5-core
 
-# Virtualization
+# ---------- 虚拟化 ----------
 kmod-vmxnet3
+kmod-virtio-net
+kmod-virtio-pci
+kmod-virtio-balloon
 
-# Display
+# ---------- 显示 / 核显 ----------
 kmod-drm-i915
 i915-firmware-dmc
+
+# ---------- 传感器 / 存储 ----------
+kmod-hwmon-core
+kmod-acpi-fan
+kmod-usb-hid

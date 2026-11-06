@@ -19,4 +19,9 @@ if [ -f "$PSTATE_STATUS_FILE" ]; then
     done
 fi
 
+# ---- 定制追加：BBR 模块 + conntrack 表放大（万级并发/多拨场景）----
+modprobe tcp_bbr 2>/dev/null
+modprobe nf_conntrack 2>/dev/null
+[ -w /sys/module/nf_conntrack/parameters/hashsize ] && echo 65536 > /sys/module/nf_conntrack/parameters/hashsize
+
 exit 0
