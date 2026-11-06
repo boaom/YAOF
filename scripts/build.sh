@@ -69,7 +69,7 @@ case "$TARGET" in
     x86)
         ARCH="x86_64"
         ;;
-    rockchip)
+    rockchip|armsr)
         ARCH="aarch64_generic"
         ;;
     *)
@@ -196,11 +196,17 @@ IB_BIN_DIR="${IB_DIR}/bin/targets/${TARGET}/${SUBTARGET}"
 [ -d "$IB_BIN_DIR" ] || die "Output directory not found: $IB_BIN_DIR"
 
 DATE_STR=$(date +%Y-%m-%d)
-PLATFORM_LABEL=$(echo "$PROFILE" | sed 's/^friendlyarm_nanopi-/nanopi-/; s/^generic$/x86-64/')
+case "$TARGET" in
+    x86) PLATFORM_LABEL="x86-64" ;;
+    armsr) PLATFORM_LABEL="armvirt-armv8" ;;
+    *) PLATFORM_LABEL=$(echo "$PROFILE" | sed 's/^friendlyarm_nanopi-/nanopi-/') ;;
+esac
 
 MATCH_PATTERN="*sysupgrade.img.gz"
 if [ "$TARGET" = "x86" ]; then
     MATCH_PATTERN="*combined-efi.img.gz"
+elif [ "$TARGET" = "armsr" ]; then
+    MATCH_PATTERN="*targz-rootfs.tar.gz"
 fi
 
 find "$IB_BIN_DIR" -type f -name "$MATCH_PATTERN" | while read -r img; do

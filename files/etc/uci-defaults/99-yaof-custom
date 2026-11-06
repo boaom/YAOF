@@ -42,10 +42,13 @@ else
 	logger -t yaof-firstboot "WARN root password hash未替换，保持空密码（首登请自行设置）"
 fi
 
-# 单网口机器（N100 软路由常见）：所有物理口都进 br-lan，避免 wan 口空挂
-# 需要「LAN/WAN 分离」就把下面整段注释掉
-if [ -f /etc/config/network ] && uci -q get network.@device[0] >/dev/null 2>&1; then
+# 多网口机器（N100/软路由）：所有物理口并进 br-lan，避免第二个口空挂
+# 只有 1 个物理口（斐讯N1、虚拟机单网卡）时自动跳过，不然会把 lan 打断
+# 想保留 LAN/WAN 分离就把 BRIDGE_ALL 改成 0
+BRIDGE_ALL=1
+if [ "${BRIDGE_ALL}" = "1" ] && [ -f /etc/config/network ] && uci -q get network.@device[0] >/dev/null 2>&1; then
 	PORTS=""
+	CNT=0
 	for n in /sys/class/net/*; do
 		dev=$(basename "$n")
 		case "$dev" in
@@ -54,11 +57,14 @@ if [ -f /etc/config/network ] && uci -q get network.@device[0] >/dev/null 2>&1; 
 		[ -d "$n/device" ] || continue
 		[ "$(cat "$n/type" 2>/dev/null)" = "1" ] || continue
 		PORTS="${PORTS} ${dev}"
+		CNT=$((CNT + 1))
 	done
-	if [ -n "${PORTS}" ]; then
+	if [ "${CNT}" -ge 2 ]; then
 		uci -q set network.@device[0].ports="${PORTS# }"
 		uci -q commit network
 		logger -t yaof-firstboot "br-lan ports:${PORTS}"
+	else
+		logger -t yaof-firstboot "single NIC (${CNT}), keep default lan device"
 	fi
 fi
 

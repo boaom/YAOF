@@ -1,0 +1,19 @@
+# ============================================================
+# 斐讯 N1 / Amlogic S905D（armsr/armv8 rootfs 打包用）
+# 只取用户态插件；与 Amlogic 内核 ABI 绑定的东西一律排除
+# ============================================================
+
+# 排除：eBPF 需要匹配内核的 vmlinux BTF，flippy 内核不是这套
+-luci-app-flowcone
+-flowcone
+-vmlinux-btf
+
+# 保留（common 里已有，这里只做说明，不重复添加）：
+#   luci-app-homeproxy / luci-app-nikki  —— 纯用户态内核，跨内核安全
+#   luci-app-sqm / ddns / upnp / zerotier —— 用户态
+#
+# 驱动类一律用 flippy 内核自带的：Amlogic 的 eth/mac 在 kernel 包里，
+# 别从 rockchip 的 feed 里装 kmod，ABI 不匹配会直接装不上或起不来。
+-autocore-arm
+-kmod-hwmon-pwmfan
+-kmod-thermal
