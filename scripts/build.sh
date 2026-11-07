@@ -88,7 +88,7 @@ if [ ! -d "$IB_DIR" ]; then
     IB_ARCHIVE="${WORK_DIR}/${IB_NAME}.tar.zst"
     IB_URL="https://downloads.openwrt.org/releases/${VERSION}/targets/${TARGET}/${SUBTARGET}/${IB_NAME}.tar.zst"
     log "Downloading ImageBuilder: ${IB_URL}"
-    curl -fsSL --retry 3 --retry-delay 2 "$IB_URL" -o "$IB_ARCHIVE" || die "Failed to download ImageBuilder archive"
+    curl -fsSL --http1.1 --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20 "$IB_URL" -o "$IB_ARCHIVE" || die "Failed to download ImageBuilder archive"
     tar --zstd -xf "$IB_ARCHIVE" -C "$WORK_DIR"
     rm -f "$IB_ARCHIVE"
 fi
@@ -96,7 +96,7 @@ fi
 mkdir -p "${IB_DIR}/keys"
 KEY_URL="https://qiusimons.github.io/OpenWrt-Add/keys/custom-feed.rsa.pub"
 log "Fetching feed signing key: ${KEY_URL}"
-curl -fsSL --retry 3 --retry-delay 2 "$KEY_URL" -o "${IB_DIR}/keys/custom-feed.rsa.pub" || die "Failed to download feed signing key"
+curl -fsSL --http1.1 --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20 "$KEY_URL" -o "${IB_DIR}/keys/custom-feed.rsa.pub" || die "Failed to download feed signing key"
 
 FEED_URL="https://qiusimons.github.io/OpenWrt-Add/${ARCH}/packages.adb"
 if ! grep -qxF "$FEED_URL" "${IB_DIR}/repositories"; then
@@ -114,7 +114,7 @@ fi
 mkdir -p "${OVERLAY_DIR}/usr/bin"
 FUCK_URL="https://raw.githubusercontent.com/QiuSimons/OpenWrt-Add/master/core/tools/clean-overlay.sh"
 log "Fetching fuck utility: ${FUCK_URL}"
-curl -fsSL --retry 3 --retry-delay 2 "$FUCK_URL" -o "${OVERLAY_DIR}/usr/bin/fuck" || die "Failed to download clean-overlay.sh"
+curl -fsSL --http1.1 --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20 "$FUCK_URL" -o "${OVERLAY_DIR}/usr/bin/fuck" || die "Failed to download clean-overlay.sh"
 chmod +x "${OVERLAY_DIR}/usr/bin/fuck"
 
 mkdir -p "${OVERLAY_DIR}/etc/apk/keys"
